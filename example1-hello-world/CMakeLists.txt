@@ -1,4 +1,4 @@
 cmake_minimum_required(VERSION 3.4)
-project(Example1)
+project(HelloWorld)
 
-add_executable(Example1 main.c)
+add_executable(HelloWorld main.c)

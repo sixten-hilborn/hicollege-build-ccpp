@@ -1,0 +1,5 @@
+[requires]
+LibMorse/0.1@hilborn/stable
+
+[generators]
+cmake

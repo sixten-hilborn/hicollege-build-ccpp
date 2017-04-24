@@ -1,21 +1,48 @@
 #include <jni.h>
+#include <functional>
+#include <memory>
 #include <string>
 
 extern "C" {
-    JNIEXPORT jstring JNICALL Java_com_example_morseapp_MainActivity_stringFromJNI(
-        JNIEnv* env,
-        jobject /* this */)
+
+#include "libmorse.h"
+
+    static int length = 0;
+    static std::string morseStr{};
+    void on()
     {
-        std::string hello = "Hello from C++";
-        return env->NewStringUTF(hello.c_str());
+        ++length;
     }
 
-    JNIEXPORT void JNICALL Java_com_example_morseapp_LibMorse_morseStr(
-            JNIEnv* env,
-            jstring text,
-            jobject )
+    void off()
     {
-        std::string hello = "Hello from C++";
-        return env->NewStringUTF(hello.c_str());
+        if (length > 2)
+            morseStr += "-";
+        else
+            morseStr += ".";
+        length = 0;
+    }
+
+    void wait()
+    {
+        if (length)
+            ++length;
+        else
+            morseStr += " ";
+    }
+
+
+    JNIEXPORT jstring JNICALL Java_com_example_morseapp_MainActivity_toMorse(
+        JNIEnv* env,
+        jobject /* this */,
+        jstring input)
+    {
+        morseStr = "";
+        auto str = std::unique_ptr<const char, std::function<void(const char*)>>{
+            env->GetStringUTFChars(input, nullptr),
+            [&] (const char* utf) { env->ReleaseStringUTFChars(input, utf); }
+        };
+        morse_str(const_cast<char*>(str.get()));
+        return env->NewStringUTF(morseStr.c_str());
     }
 }

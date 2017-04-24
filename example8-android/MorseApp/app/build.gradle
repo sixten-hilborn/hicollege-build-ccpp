@@ -15,6 +15,11 @@ android {
                 cppFlags "-std=c++11 -frtti -fexceptions"
             }
         }
+        ndk {
+            // Specifies the ABI configurations of your native
+            // libraries Gradle should build and package with your APK.
+            abiFilters 'armeabi-v7a', 'x86', 'armeabi' // 'arm64-v8a', mips', ‘x86_64’
+        }
     }
     buildTypes {
         release {
@@ -28,6 +33,33 @@ android {
         }
     }
 }
+
+task conanInstall {
+    def CONAN_ARCHS_MAP = ["armeabi-v7a":'armv7', "armeabi":'armv6', "arm64-v8a": "armv8"]
+    def api_level = android.defaultConfig.minSdkVersion.mApiLevel
+    android.defaultConfig.ndk.abiFilters.each {
+        def arch = CONAN_ARCHS_MAP.get(it, it)
+        def build_dir = new File("app/conan/$it")
+        build_dir.mkdirs()
+        // if you have problems running the command try to specify the absolute
+        // path to conan (Known problem in MacOSX)
+        def cmd = "conan install --file ../../conanfile.txt " +
+                "--profile ../../conan_android.profile " + // base android profile
+                "-s arch=${arch} -s os.api_level=${api_level} " + // Adjust api level and architecture
+                " --build missing " // Build from sources automatically if needed.
+        print(">> ${cmd} \n")
+
+        def sout = new StringBuilder(), serr = new StringBuilder()
+        def proc = cmd.execute(null, build_dir)
+        proc.consumeProcessOutput(sout, serr)
+        proc.waitFor()
+        println "$sout $serr"
+        if(proc.exitValue() != 0){
+            throw new Exception("out> $sout err> $serr" + "\nCommand: ${cmd}")
+        }
+    }
+}
+
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
